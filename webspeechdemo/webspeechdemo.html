@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>Web Speech API Demo</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <style>
   * {
     font-family: Verdana, Arial, sans-serif;
@@ -133,6 +134,10 @@
     <select id="select_dialect"></select>
   </div>
 </div>
+<div>
+  <input type="text" id="start_word" placeholder="Start Word">
+  <input type="text" id="stop_word" placeholder="Stop Word">
+</div>
 <script>
 var langs =
 [['Afrikaans',       ['af-ZA']],
@@ -197,6 +202,18 @@ var langs =
                      ['yue-Hant-HK', '粵語 (香港)']],
  ['日本語',           ['ja-JP']],
  ['Lingua latīna',   ['la']]];
+
+start_word = "start";
+stop_word = "stop";
+
+$('#start_word').keyup(function() {
+  start_word = $('#start_word').val();
+})
+
+
+$('#stop_word').keyup(function() {
+  stop_word = $('#stop_word').val();
+})
 
 for (var i = 0; i < langs.length; i++) {
   select_language.options[i] = new Option(langs[i][0], i);
@@ -280,20 +297,36 @@ if (!('webkitSpeechRecognition' in window)) {
     }
   };
 
+  listen = false;
+
   recognition.onresult = function(event) {
     var interim_transcript = '';
     for (var i = event.resultIndex; i < event.results.length; ++i) {
       if (event.results[i].isFinal) {
-        final_transcript += event.results[i][0].transcript;
+        console.log(event.results[i]);
+        if (event.results[i][0].transcript.startsWith(' ' + start_word) || event.results[i][0].transcript.startsWith(start_word)) {
+          listen = true;
+        }
+        if (event.results[i][0].transcript.endsWith(stop_word)) {
+          listen = false;
+        }
+
+        if (listen === true) {
+          final_transcript += event.results[i][0].transcript;
+        }
       } else {
-        interim_transcript += event.results[i][0].transcript;
+        if (listen === true) {
+          interim_transcript += event.results[i][0].transcript;
+        }
       }
     }
-    final_transcript = capitalize(final_transcript);
-    final_span.innerHTML = linebreak(final_transcript);
-    interim_span.innerHTML = linebreak(interim_transcript);
-    if (final_transcript || interim_transcript) {
-      showButtons('inline-block');
+    if (listen === true) {
+      final_transcript = capitalize(final_transcript);
+      final_span.innerHTML = linebreak(final_transcript);
+      interim_span.innerHTML = linebreak(interim_transcript);
+      if (final_transcript || interim_transcript) {
+        showButtons('inline-block');
+      }
     }
   };
 }
